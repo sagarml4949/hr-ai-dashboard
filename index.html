@@ -236,7 +236,7 @@ function switchView(viewName) {
   else if (viewName === 'performance') btn.classList.add('active-purple');
 }
 
-/* ── AI AGENT (FastAPI) ── */
+/* ── AI AGENT (FastAPI connected to Render Cloud) ── */
 async function askAgent() {
   const inputField = document.getElementById('chat-input');
   const chatHistory = document.getElementById('chat-history');
@@ -250,7 +250,8 @@ async function askAgent() {
   chatHistory.scrollTop = chatHistory.scrollHeight;
 
   try {
-      const response = await fetch('http://localhost:8000/chat', {
+      // Connects directly to your live Render server!
+      const response = await fetch('https://hr-ai-dashboard.onrender.com/chat', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: prompt })
       });
       const data = await response.json();
@@ -259,7 +260,7 @@ async function askAgent() {
       chatHistory.scrollTop = chatHistory.scrollHeight;
   } catch (error) {
       document.getElementById(loadId).remove();
-      chatHistory.innerHTML += `<div class="msg agent" style="color: var(--magenta);">Server disconnected. Check api.py.</div>`;
+      chatHistory.innerHTML += `<div class="msg agent" style="color: var(--magenta);">Server disconnected. Please ensure the Render web service is live.</div>`;
   }
 }
 document.getElementById('chat-input').addEventListener('keypress', function (e) { if (e.key === 'Enter') askAgent(); });
