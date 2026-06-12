@@ -44,7 +44,7 @@ class ChatRequest(BaseModel):
 # This list acts as our AI's short-term memory
 conversation_memory = []
 
-# 4. API Endpoint 1: The Chat Agent with Conversational Memory
+# 4. API Endpoint 1: The Chat Agent with Conversational Memory and Error Fallback
 @app.post("/chat")
 def chat_with_agent(request: ChatRequest):
     global conversation_memory
@@ -58,31 +58,43 @@ def chat_with_agent(request: ChatRequest):
         for turn in conversation_memory:
             context += f"User: {turn['user']}\nAI: {turn['ai']}\n"
         
-        # Step B: Inject the memory into the new prompt
+        # Step B: Prompt with stricter formatting rules
         full_prompt = f"""
         {context}
         
         Current Question: {request.prompt}
         
         Instructions: Answer the Current Question using the pandas dataframe. 
-        If the Current Question uses pronouns like "they", "them", or "it", refer to the Previous Conversation History to understand the context.
+        If the question uses pronouns, refer to the Conversation History.
+        CRITICAL: When you are ready to answer, you MUST use the exact prefix "Final Answer: ".
         """
         
         # Step C: Ask the agent
         result = agent.invoke({"input": full_prompt})
         final_answer = str(result["output"])
         
-        # Step D: Save this interaction to memory
-        conversation_memory.append({"user": request.prompt, "ai": final_answer})
-        
-        # Keep memory clean: Only remember the last 3 interactions to preserve speed
-        if len(conversation_memory) > 3:
-            conversation_memory.pop(0)
-
-        return {"response": final_answer, "status": "success"}
-    
     except Exception as e:
-        return {"response": f"Error crunching data: {str(e)}", "status": "error"}
+        error_msg = str(e)
+        # THE FIX: Graceful Fallback for LLM Formatting Rebellions
+        if "Could not parse LLM output:" in error_msg:
+            try:
+                # We manually extract the AI's thought process out of the crash log!
+                extracted_answer = error_msg.split("`")[1]
+                extracted_answer = extracted_answer.replace("Thought:", "").replace("Action: None", "").strip()
+                final_answer = extracted_answer
+            except IndexError:
+                return {"response": "System Error: The AI returned an unreadable format. Please try rephrasing.", "status": "error"}
+        else:
+            return {"response": f"System Error: {error_msg}", "status": "error"}
+
+    # Step D: Save this interaction to memory
+    conversation_memory.append({"user": request.prompt, "ai": final_answer})
+    
+    # Keep memory clean: Only remember the last 3 interactions to preserve speed
+    if len(conversation_memory) > 3:
+        conversation_memory.pop(0)
+
+    return {"response": final_answer, "status": "success"}
 
 # 5. API Endpoint 2: The 3D Engine Data Feeder
 @app.get("/data")
