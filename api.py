@@ -31,7 +31,7 @@ except FileNotFoundError:
 GROQ_API_KEY = os.getenv("GROQ_API_KEY") 
 
 try:
-    llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=GROQ_API_KEY, temperature=0)
+    llm = ChatGroq(model="mixtral-8x7b-32768", api_key=GROQ_API_KEY, temperature=0)
     agent = create_pandas_dataframe_agent(llm, hr_data, verbose=False, allow_dangerous_code=True, handle_parsing_errors=True)
 except Exception as e:
     print("Agent setup failed. Check your API key.", e)
