@@ -4,3 +4,4 @@ pandas
 langchain-groq
 langchain-experimental
 pydantic
+tabulate
