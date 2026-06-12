@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Enterprise HR Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg-main: #f4f6f9; --bg-card: #ffffff; --text-dark: #2c3e50; --text-muted: #7f8c8d;
+    --border-light: #e0e6ed; --brand-blue: #1e3799; --cyan: #00d2d3; --magenta: #b71540;
+    --green: #10ac84; --purple: #8c7ae6; --font-main: 'Segoe UI', 'Open Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background-color: var(--bg-main); color: var(--text-dark); font-family: var(--font-main); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+  /* Top Navbar */
+  .top-navbar { background-color: var(--brand-blue); color: white; padding: 0 30px; height: 60px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .brand { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+  .brand span { font-weight: 400; font-size: 18px; opacity: 0.9; }
+  .nav-links { display: flex; gap: 30px; height: 100%; }
+  .nav-link { color: white; opacity: 0.6; text-decoration: none; font-size: 14px; font-weight: 600; display: flex; align-items: center; border-bottom: 4px solid transparent; cursor: pointer; transition: 0.2s; }
+  .nav-link.active { opacity: 1; border-bottom-color: var(--cyan); }
+  .user-circle { width: 32px; height: 32px; background-color: var(--cyan); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: var(--brand-blue); }
+
+  /* Layout */
+  .layout-wrapper { display: flex; flex: 1; overflow: hidden; }
+  .dashboard-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 20px 30px; }
+  .ai-sidebar { width: 350px; background-color: var(--bg-card); border-left: 1px solid var(--border-light); display: flex; flex-direction: column; box-shadow: -2px 0 10px rgba(0,0,0,0.02); z-index: 10; }
+
+  /* Pills */
+  .pill-nav-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 25px; }
+  .pill { background-color: white; border: 1px solid var(--border-light); color: var(--text-dark); padding: 8px 24px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+  .pill.active-blue { background-color: var(--cyan); color: white; border-color: var(--cyan); }
+  .pill.active-magenta { background-color: var(--magenta); color: white; border-color: var(--magenta); }
+  .pill.active-green { background-color: var(--green); color: white; border-color: var(--green); }
+  .pill.active-purple { background-color: var(--purple); color: white; border-color: var(--purple); }
+
+  /* Views */
+  .view-section { display: none; animation: fadeIn 0.3s ease; }
+  .view-section.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Grid & Cards */
+  .grid-top { display: grid; grid-template-columns: 1.2fr 1.5fr 1.2fr; gap: 20px; margin-bottom: 20px; }
+  .grid-bottom { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .grid-half { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  
+  .card { background-color: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-light); padding: 20px; position: relative; }
+  .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+  .card-title { font-size: 14px; color: var(--text-muted); font-weight: 600; }
+  .kpi-value { font-size: 32px; font-weight: 700; color: var(--brand-blue); line-height: 1.2; }
+  .kpi-sub { font-size: 12px; color: var(--text-muted); }
+  
+  .card.framed { border: 2px solid var(--border-light); margin-top: 10px; }
+  .card.framed.blue-frame { border-color: rgba(30, 55, 153, 0.2); }
+  .card.framed.magenta-frame { border-color: rgba(183, 21, 64, 0.2); }
+  .card.framed.green-frame { border-color: rgba(16, 172, 132, 0.2); }
+  .card.framed.purple-frame { border-color: rgba(140, 122, 230, 0.2); }
+
+  .section-label { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background-color: var(--brand-blue); color: white; padding: 4px 16px; border-radius: 4px; font-size: 11px; font-weight: bold; letter-spacing: 0.5px; z-index: 2; }
+  .section-label.magenta { background-color: var(--magenta); }
+  .section-label.green { background-color: var(--green); }
+  .section-label.purple { background-color: var(--purple); }
+
+  /* AI Sidebar */
+  .ai-header { padding: 20px; border-bottom: 1px solid var(--border-light); font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 10px; background-color: #f8fafc; }
+  .chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; font-size: 13px; line-height: 1.5; }
+  .msg { padding: 12px 16px; border-radius: 8px; max-width: 90%; }
+  .msg.agent { background-color: #f1f2f6; color: var(--text-dark); align-self: flex-start; border: 1px solid var(--border-light); }
+  .msg.user { background-color: var(--brand-blue); color: white; align-self: flex-end; }
+  .chat-input-wrapper { padding: 20px; border-top: 1px solid var(--border-light); background-color: white; }
+  .input-group { display: flex; border: 1px solid var(--border-light); border-radius: 6px; overflow: hidden; }
+  .input-group input { flex: 1; padding: 12px; border: none; outline: none; font-family: var(--font-main); }
+  .input-group button { background-color: var(--brand-blue); color: white; border: none; padding: 0 20px; cursor: pointer; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<nav class="top-navbar">
+  <div class="brand">HR Analytics</div>
+  <div class="nav-links">
+    <div class="nav-link" id="nav-summary" onclick="toggleTopNav('summary')">Summary</div>
+    <div class="nav-link active" id="nav-metrics" onclick="toggleTopNav('metrics')">HR metrics</div>
+  </div>
+  <div class="user-circle">A</div>
+</nav>
+
+<div class="layout-wrapper">
+  <main class="dashboard-content">
+    
+    <div class="pill-nav-container" id="pill-container">
+      <div class="pill active-blue" id="btn-headcount" onclick="switchView('headcount')">Workforce & Headcount</div>
+      <div class="pill" id="btn-terminations" onclick="switchView('terminations')">Terminations & Risk</div>
+      <div class="pill" id="btn-salary" onclick="switchView('salary')">Salary Distribution</div>
+      <div class="pill" id="btn-performance" onclick="switchView('performance')">Performance</div>
+    </div>
+
+    <div class="view-section" id="view-summary">
+      <div class="card framed blue-frame" style="padding: 40px; text-align: center; margin-bottom: 20px;">
+        <h2 style="color: var(--brand-blue); margin-bottom: 10px;">Executive Workforce Summary</h2>
+        <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto; line-height: 1.6;">
+          Overall retention stands at 76.2%. Key risk vectors identified include a significant tenure cliff at 5 years (56.6% churn), high turnover in the HR and Accounting departments (>26%), and extreme flight risk within the Low Salary band. Immediate compensation reviews and workload balancing are advised.
+        </p>
+      </div>
+      <div class="grid-bottom">
+        <div class="card"><div class="card-title">Overall Attrition Rate</div><div class="kpi-value" style="color:var(--magenta)">23.8%</div></div>
+        <div class="card"><div class="card-title">Model Accuracy</div><div class="kpi-value" style="color:var(--cyan)">99.1%</div></div>
+        <div class="card"><div class="card-title">Highest Risk Dept</div><div class="kpi-value" style="color:var(--magenta)">HR Dept</div></div>
+      </div>
+    </div>
+
+    <div class="view-section active" id="view-headcount">
+      <div class="grid-top">
+        <div class="card framed blue-frame">
+          <div class="card-title">Total Headcount</div>
+          <div class="kpi-value">14,999</div>
+          <div style="height: 120px;"><canvas id="hcTrendChart"></canvas></div>
+        </div>
+        <div class="card"><div class="card-title">Headcount by Department</div><div style="height: 180px;"><canvas id="deptChart"></canvas></div></div>
+        <div class="card"><div class="card-title">Tenure Distribution</div><div style="height: 180px;"><canvas id="tenureChart"></canvas></div></div>
+      </div>
+      <div class="card framed blue-frame" style="padding-top: 30px;">
+        <div class="section-label cyan">Engagement</div>
+        <div class="grid-bottom">
+          <div><div class="card-title">Promoted Last 5 Years</div><div style="height: 160px;"><canvas id="promoChart"></canvas></div></div>
+          <div><div class="card-title">Avg Monthly Hours</div><div style="height: 160px;"><canvas id="hoursChart"></canvas></div></div>
+          <div><div class="card-title">Satisfaction Level</div><div style="height: 160px;"><canvas id="satChart"></canvas></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="view-section" id="view-terminations">
+      <div class="grid-top">
+        <div class="card framed magenta-frame">
+          <div class="card-title">Total Terminations</div>
+          <div class="kpi-value" style="color: var(--magenta);">3,571</div>
+          <div style="height: 120px;"><canvas id="termTrendChart"></canvas></div>
+        </div>
+        <div class="card"><div class="card-title">Exits by Department</div><div style="height: 180px;"><canvas id="termDeptChart"></canvas></div></div>
+        <div class="card"><div class="card-title">Turnover Rate %</div><div class="kpi-value" style="color: var(--magenta); text-align: center; margin-top:40px;">23.8%</div></div>
+      </div>
+      <div class="card framed magenta-frame" style="padding-top: 30px;">
+        <div class="section-label magenta">Risk Drivers</div>
+        <div class="grid-bottom">
+          <div><div class="card-title">Exits by Salary</div><div style="height: 160px;"><canvas id="termSalChart"></canvas></div></div>
+          <div><div class="card-title">Exits by Project Load</div><div style="height: 160px;"><canvas id="termProjChart"></canvas></div></div>
+          <div><div class="card-title">Work Accident Status</div><div style="height: 160px;"><canvas id="termAccChart"></canvas></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="view-section" id="view-salary">
+      <div class="grid-top">
+        <div class="card framed green-frame">
+          <div class="card-title">Largest Salary Band</div>
+          <div class="kpi-value" style="color: var(--green);">Low</div>
+          <div class="kpi-sub">7,316 Employees</div>
+        </div>
+        <div class="card"><div class="card-title">Workforce by Salary Band</div><div style="height: 180px;"><canvas id="salDistChart"></canvas></div></div>
+        <div class="card"><div class="card-title">Churn Rate by Salary</div><div style="height: 180px;"><canvas id="salRiskChart"></canvas></div></div>
+      </div>
+      <div class="grid-half">
+        <div class="card framed green-frame" style="padding-top: 30px;">
+          <div class="section-label green">High Earner Retention</div>
+          <div class="kpi-value" style="color: var(--green); text-align: center; margin-top:20px;">93.4%</div>
+          <div class="kpi-sub" style="text-align: center;">Only 6.6% of High Earners leave</div>
+        </div>
+        <div class="card"><div class="card-title">Avg Hours by Salary Band</div><div style="height: 160px;"><canvas id="salHoursChart"></canvas></div></div>
+      </div>
+    </div>
+
+    <div class="view-section" id="view-performance">
+      <div class="grid-top">
+        <div class="card framed purple-frame">
+          <div class="card-title">Avg Evaluation Score</div>
+          <div class="kpi-value" style="color: var(--purple);">0.71</div>
+          <div class="kpi-sub">Out of 1.0</div>
+        </div>
+        <div class="card"><div class="card-title">Evaluation Distribution</div><div style="height: 180px;"><canvas id="perfDistChart"></canvas></div></div>
+        <div class="card"><div class="card-title">Top Performing Dept</div><div class="kpi-value" style="color: var(--purple); text-align: center; margin-top:40px;">Management</div></div>
+      </div>
+      <div class="card framed purple-frame" style="padding-top: 30px;">
+        <div class="section-label purple">Performance vs Retention</div>
+        <div class="grid-half">
+          <div><div class="card-title">Evaluation vs Churn (Bimodal Risk)</div><div style="height: 160px;"><canvas id="perfRiskChart"></canvas></div></div>
+          <div><div class="card-title">Avg Evaluation by Project Load</div><div style="height: 160px;"><canvas id="perfProjChart"></canvas></div></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <aside class="ai-sidebar">
+    <div class="ai-header"><span style="color: var(--cyan);">●</span> Data Analytics Assistant</div>
+    <div class="chat-box" id="chat-history">
+      <div class="msg agent">Hello. I am connected to the HR database. I can analyze satisfaction, workload, evaluations, and churn metrics. How can I assist you today?</div>
+    </div>
+    <div class="chat-input-wrapper">
+      <div class="input-group">
+        <input type="text" id="chat-input" placeholder="Query dataset..." />
+        <button onclick="askAgent()">Send</button>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+/* ── TOP NAV LOGIC ── */
+function toggleTopNav(target) {
+  document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+  document.getElementById('nav-' + target).classList.add('active');
+  
+  if(target === 'summary') {
+    document.getElementById('pill-container').style.display = 'none';
+    document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+    document.getElementById('view-summary').classList.add('active');
+  } else {
+    document.getElementById('pill-container').style.display = 'flex';
+    switchView('headcount'); // Default back to headcount
+  }
+}
+
+/* ── PILL LOGIC ── */
+function switchView(viewName) {
+  document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.pill').forEach(el => { el.className = 'pill'; }); // Reset all
+
+  document.getElementById('view-' + viewName).classList.add('active');
+
+  const btn = document.getElementById('btn-' + viewName);
+  if (viewName === 'headcount') btn.classList.add('active-blue');
+  else if (viewName === 'terminations') btn.classList.add('active-magenta');
+  else if (viewName === 'salary') btn.classList.add('active-green');
+  else if (viewName === 'performance') btn.classList.add('active-purple');
+}
+
+/* ── AI AGENT (FastAPI) ── */
+async function askAgent() {
+  const inputField = document.getElementById('chat-input');
+  const chatHistory = document.getElementById('chat-history');
+  const prompt = inputField.value.trim();
+  if (!prompt) return;
+
+  chatHistory.innerHTML += `<div class="msg user">${prompt}</div>`;
+  inputField.value = '';
+  const loadId = 'load-' + Date.now();
+  chatHistory.innerHTML += `<div id="${loadId}" class="msg agent" style="opacity: 0.6;">Analyzing data...</div>`;
+  chatHistory.scrollTop = chatHistory.scrollHeight;
+
+  try {
+      const response = await fetch('http://localhost:8000/chat', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: prompt })
+      });
+      const data = await response.json();
+      document.getElementById(loadId).remove();
+      chatHistory.innerHTML += `<div class="msg agent">${data.response}</div>`;
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+  } catch (error) {
+      document.getElementById(loadId).remove();
+      chatHistory.innerHTML += `<div class="msg agent" style="color: var(--magenta);">Server disconnected. Check api.py.</div>`;
+  }
+}
+document.getElementById('chat-input').addEventListener('keypress', function (e) { if (e.key === 'Enter') askAgent(); });
+
+/* ── CHART.JS CONFIGURATION ── */
+Chart.defaults.font.family = "'Segoe UI', 'Open Sans', sans-serif";
+const noLegend = { display: false };
+
+window.addEventListener('DOMContentLoaded', () => {
+
+  /* VIEW 1: HEADCOUNT */
+  new Chart(document.getElementById('hcTrendChart'), { type: 'line', data: { labels: ['2019','2020','2021','2022','2023','2024'], datasets: [{ data: [11000, 12500, 13800, 14200, 15100, 14999], borderColor: '#1e3799', borderWidth: 3, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: noLegend }, scales: { x: { display: false }, y: { display: false } } } });
+  new Chart(document.getElementById('deptChart'), { type: 'bar', indexAxis: 'y', data: { labels: ['Sales','Technical','Support','IT','R&D'], datasets: [{ data: [4140, 2720, 2229, 1227, 787], backgroundColor: '#1e3799', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: noLegend }, scales: { x: { display: false }, y: { grid: { display: false } } } } });
+  new Chart(document.getElementById('tenureChart'), { type: 'bar', data: { labels: ['2 Yr','3 Yr','4 Yr','5 Yr','6 Yr','>7 Yr'], datasets: [{ data: [3244, 6443, 2557, 1473, 718, 564], backgroundColor: '#8c7ae6', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: noLegend }, scales: { x: { grid: { display: false } }, y: { display: false } } } });
+  new Chart(document.getElementById('promoChart'), { type: 'doughnut', data: { labels: ['Not Promoted', 'Promoted'], datasets: [{ data: [14680, 319], backgroundColor: ['#00d2d3', '#1e3799'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'right' } } } });
+  new Chart(document.getElementById('hoursChart'), { type: 'line', data: { labels: ['120','160','200','240','280'], datasets: [{ data: [816, 1594, 1426, 1466, 109], borderColor: '#00d2d3', backgroundColor: 'rgba(0, 210, 211, 0.1)', fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: noLegend }, scales: { x: { grid: { display: false } }, y: { display: false } } } });
+  new Chart(document.getElementById('satChart'), { type: 'bar', data: { labels: ['Low', 'Med', 'High'], datasets: [{ data: [4000, 6500, 4499], backgroundColor: '#487eb0', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: noLegend }, scales: { x: { grid: { display: false } }, y: { display: false } } } });
+
+  /* VIEW 2: TERMINATIONS */
+  new Chart(document.getElementById('termTrendChart'), { type: 'line', data: { labels: ['2019','2020','2021','2022','2023','2024'], datasets: [{ data: [500, 650, 720, 800, 1100, 3571], borderColor: '#b71540', borderWidth: 3, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: noLegend }, scales: { x: { display: false }, y: { display: false } } } });
+  new Chart(document.getElementById('termDeptChart'), { type: 'bar', data: { labels: ['Sales','Tech','Support','IT','HR'], datasets: [{ data: [1014, 697, 555, 273, 215], backgroundColor: '#b71540', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: noLegend }, scales: { x: { grid: { display: false } }, y: { display: false } } } });
+  new Chart(document.getElementById('termSalChart'), { type: 'doughnut', data: { labels: ['Low', 'Medium', 'High'], datasets: [{ data: [2172, 1317, 82], backgroundColor: ['#b71540', '#e55039', '#f8c291'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right' } } } });
+  new Chart(document.getElementById('termProjChart'), { type: 'bar', data: { labels: ['2','3','4','5','6','7'], datasets: [{ data: [1567, 72, 409, 612, 655, 256], backgroundColor: '#e55039', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: noLegend }, scales: { x: { grid: { display: false } }, y: { display: false } } } });
+  new Chart(document.getElementById('termAccChart'), { type: 'pie', data: { labels: ['No Accident', 'Accident'], datasets: [{ data: [3402, 169], backgroundColor: ['#b71540', '#f8c291'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } } });
+
+  /* VIEW 3: SALARY (Green) */
+  new Chart(document.getElementById('salDistChart'), { type: 'pie', data: { labels: ['Low', 'Medium', 'High'], datasets: [{ data: [7316, 6446, 1237], backgroundColor: ['#10ac84', '#1dd1a1', '#c8d6e5'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } } });
+  new Chart(document.getElementById('salRiskChart'), { type: 'bar', data: { labels: ['Low', 'Medium', 'High'], datasets: [{ data: [29.7, 20.4, 6.6], backgroundColor: '#10ac84', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: noLegend }, scales: { x: { grid: { display: false } }, y: { display: false } } } });
+  new Chart(document.getElementById('salHoursChart'), { type: 'bar', indexAxis: 'y', data: { labels: ['Low', 'Medium', 'High'], datasets: [{ data: [201, 201, 199], backgroundColor: '#1dd1a1', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: noLegend }, scales: { x: { display: false }, y: { grid: { display: false } } } } });
+
+  /* VIEW 4: PERFORMANCE (Purple) */
+  new Chart(document.getElementById('perfDistChart'), { type: 'line', data: { labels: ['0.4','0.5','0.6','0.7','0.8','0.9','1.0'], datasets: [{ data: [500, 1200, 1500, 1800, 2200, 2500, 1300], borderColor: '#8c7ae6', backgroundColor: 'rgba(140, 122, 230, 0.2)', fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: noLegend }, scales: { x: { grid: { display: false } }, y: { display: false } } } });
+  new Chart(document.getElementById('perfRiskChart'), { type: 'bar', data: { labels: ['Low Eval (<0.5)','Med Eval','High Eval (>0.8)'], datasets: [{ data: [45.2, 5.1, 28.5], backgroundColor: '#8c7ae6', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: noLegend }, scales: { x: { grid: { display: false } }, y: { display: false } } } });
+  new Chart(document.getElementById('perfProjChart'), { type: 'line', data: { labels: ['2 Proj','3 Proj','4 Proj','5 Proj','6 Proj','7 Proj'], datasets: [{ data: [0.51, 0.68, 0.72, 0.75, 0.81, 0.85], borderColor: '#8c7ae6', tension: 0.4, pointBackgroundColor: '#8c7ae6' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: noLegend }, scales: { x: { grid: { display: false } }, y: { display: false } } } });
+
+});
+</script>
+</body>
+</html>
